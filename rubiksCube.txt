@@ -1,0 +1,439 @@
+#--------------------------------------colors------------------------------
+var red = [1,0,0];
+var yellow = [1,1,0];
+var green = [0,1,0];
+var white = [1,1,1];
+var orange = [1,0.5,0];
+var blue = [0,0,1];
+#-------------------------------------perspective-------------------------
+canvas.shift(canvas.width()/2, canvas.height()/2);
+var theCanvas = -140;
+var cubeLength = 10;
+var vanishingPoint = [4*cubeLength,0.0,20.0];
+#-------------------------------------function----------------------------
+function calculateIntersection(p_vanishingPoint, p_point, p_canvas)
+{
+	var lambda = ((p_canvas)-(p_vanishingPoint[0]))/((p_point[0]-(p_vanishingPoint[0])));
+	var i1 = (p_vanishingPoint[0]) + lambda * (p_point[0]-(p_vanishingPoint[0]));
+	var i2 = (p_vanishingPoint[1]) + lambda * (p_point[1]-(p_vanishingPoint[1]));
+	var i3 = (p_vanishingPoint[2]) - lambda * (p_point[2]-(p_vanishingPoint[2]));
+	
+	return [i2, i3];
+}
+#-------------------------------------classes-----------------------------
+class Side
+{
+public:
+	var name;
+	var distance = [];
+	constructor(p_name, p_distance)
+	{
+		name = p_name;
+		distance = p_distance;
+	}
+}
+class cube
+{
+public:
+	#c for corner
+	var c = [];
+	var colors = [];
+	var length = 30;
+	var position = [0,0,0];
+
+	constructor(p_length, p_position, p_colors = [[0.5,0.5,0.5],[0.5,0.5,0.5],[0.5,0.5,0.5],[0.5,0.5,0.5],[0.5,0.5,0.5],[0.5,0.5,0.5]])
+	{
+			length = p_length;
+			position = p_position;
+			colors = p_colors;
+			#initialise the 8 corner points of the cube
+			c.push([1*(length/2)+(position[0]*length),-1*(length/2)+(position[1]*length),-1*(length/2)+(position[2]*length)]);
+			c.push([1*(length/2)+(position[0]*length),1*(length/2)+(position[1]*length),-1*(length/2)+(position[2]*length)]);
+			c.push([-1*(length/2)+(position[0]*length),1*(length/2)+(position[1]*length),-1*(length/2)+(position[2]*length)]);
+			c.push([-1*(length/2)+(position[0]*length),-1*(length/2)+(position[1]*length),-1*(length/2)+(position[2]*length)]);
+			c.push([1*(length/2)+(position[0]*length),-1*(length/2)+(position[1]*length),1*(length/2)+(position[2]*length)]);
+			c.push([1*(length/2)+(position[0]*length),1*(length/2)+(position[1]*length),1*(length/2)+(position[2]*length)]);
+			c.push([-1*(length/2)+(position[0]*length),1*(length/2)+(position[1]*length),1*(length/2)+(position[2]*length)]);
+			c.push([-1*(length/2)+(position[0]*length),-1*(length/2)+(position[1]*length),1*(length/2)+(position[2]*length)]);			
+	}
+	function rotateX1(degree)
+	{
+		for var i in 0:c.size() do
+		{
+			var temp = deepcopy(c[i]);
+			c[i][1] = math.cos(degree) * temp[1] - math.sin(degree) * temp[2];
+			c[i][2] = math.sin(degree) * temp[1] + math.cos(degree) * temp[2];
+		}
+	}
+	function rotateX2(degree)
+	{
+		for var i in 0:c.size() do
+		{
+			var temp = deepcopy(c[i]);
+			c[i][0] = math.cos(degree) * temp[0] + math.sin(degree) * temp[2];
+			c[i][2] = -1*math.sin(degree) * temp[0] + math.cos(degree) * temp[2];
+		}
+	}
+	function rotateX3(degree)
+	{
+		for var i in 0:c.size() do
+		{
+			var temp = deepcopy(c[i]);
+			c[i][0] = math.cos(degree) * temp[0] - math.sin(degree) * temp[1];
+			c[i][1] = math.sin(degree) * temp[0] + math.cos(degree) * temp[1];
+		}
+	}
+	#returns the center of a cube
+	function getCenter()
+	{
+		return [0.5*(c[0][0]+c[6][0]),0.5*(c[0][1]+c[6][1]),0.5*(c[0][2]+c[6][2])];
+	}
+	#return the distance between vanishing point and the center of the cube
+	function getDistance(p_vanishingPoint)
+	{
+		return math.sqrt((p_vanishingPoint[0]-this.getCenter()[0])^2 + (p_vanishingPoint[1]-this.getCenter()[1])^2 + (p_vanishingPoint[2]-this.getCenter()[2])^2);
+	}
+	function getCenterOfSide(p_point1, p_point2)
+	{
+		return [0.5*(p_point1[0]+p_point2[0]),0.5*(p_point1[1]+p_point2[1]),0.5*(p_point1[2]+p_point2[2])];
+	}
+	function getDistanceOfSide(p_point1, p_point2, p_vanishingPoint)
+	{
+				return math.sqrt((p_vanishingPoint[0]-this.getCenterOfSide(p_point1, p_point2)[0])^2 + 
+								(p_vanishingPoint[1]-this.getCenterOfSide(p_point1, p_point2)[1])^2 + 
+								(p_vanishingPoint[2]-this.getCenterOfSide(p_point1, p_point2)[2])^2);
+	}
+	function drawFront()
+	{
+		#vorne
+		canvas.setFillColor(colors[1][0],colors[1][1],colors[1][2]);
+		canvas.fillArea([calculateIntersection(vanishingPoint, c[0],theCanvas), 
+						calculateIntersection(vanishingPoint, c[1], theCanvas),
+						calculateIntersection(vanishingPoint, c[5], theCanvas),
+						calculateIntersection(vanishingPoint, c[4], theCanvas)]);
+	}
+	function drawBack()
+	{
+		#hinten		
+		canvas.setFillColor(colors[3][0],colors[3][1],colors[3][2]);	
+		canvas.fillArea([calculateIntersection(vanishingPoint, c[3],theCanvas), 
+						calculateIntersection(vanishingPoint, c[2], theCanvas),
+						calculateIntersection(vanishingPoint, c[6], theCanvas),
+						calculateIntersection(vanishingPoint, c[7], theCanvas)]);
+	}
+	function drawLeft()
+	{
+		#links				
+		canvas.setFillColor(colors[4][0],colors[4][1],colors[4][2]);				
+		canvas.fillArea([calculateIntersection(vanishingPoint, c[0],theCanvas), 
+						calculateIntersection(vanishingPoint, c[3], theCanvas),
+						calculateIntersection(vanishingPoint, c[7], theCanvas),
+						calculateIntersection(vanishingPoint, c[4], theCanvas)]);		
+	}
+	function drawRight()
+	{
+		#rechts				
+		canvas.setFillColor(colors[2][0],colors[2][1],colors[2][2]);				
+		canvas.fillArea([calculateIntersection(vanishingPoint, c[1],theCanvas), 
+						calculateIntersection(vanishingPoint, c[2], theCanvas),
+						calculateIntersection(vanishingPoint, c[6], theCanvas),
+						calculateIntersection(vanishingPoint, c[5], theCanvas)]);
+	}
+	function drawBottom()
+	{
+		#unten			
+		canvas.setFillColor(colors[0][0],colors[0][1],colors[0][2]);			
+		canvas.fillArea([calculateIntersection(vanishingPoint, c[0],theCanvas), 
+						calculateIntersection(vanishingPoint, c[1], theCanvas),
+						calculateIntersection(vanishingPoint, c[2], theCanvas),
+						calculateIntersection(vanishingPoint, c[3], theCanvas)]);			
+	}
+	function drawTop()
+	{
+		#oben
+		canvas.setFillColor(colors[5][0],colors[5][1],colors[5][2]);		
+		canvas.fillArea([calculateIntersection(vanishingPoint, c[4],theCanvas), 
+						calculateIntersection(vanishingPoint, c[5], theCanvas),
+						calculateIntersection(vanishingPoint, c[6], theCanvas),
+						calculateIntersection(vanishingPoint, c[7], theCanvas)]);	
+	}
+	function orderSides(p_sides)
+	{
+		for var i in 0:(p_sides.size()-1) do
+		{
+			if p_sides[i].distance >= p_sides[i+1].distance then continue;
+			else
+			{
+				p_sides.insert(i, p_sides[i+1]);
+				p_sides.remove(i+2);
+				orderSides(p_sides);
+			}
+		}
+	}
+	function draw()
+	{		
+		var sides = [];
+		sides.push(Side("front", this.getDistanceOfSide(c[0], c[5], vanishingPoint)));
+		sides.push(Side("back", this.getDistanceOfSide(c[3], c[6], vanishingPoint)));
+		sides.push(Side("left", this.getDistanceOfSide(c[0], c[7], vanishingPoint)));
+		sides.push(Side("right", this.getDistanceOfSide(c[1], c[6], vanishingPoint)));
+		sides.push(Side("bottom", this.getDistanceOfSide(c[0], c[2], vanishingPoint)));
+		sides.push(Side("top", this.getDistanceOfSide(c[4], c[6], vanishingPoint)));
+		this.orderSides(sides);
+		
+		for var i in sides do
+		{
+			if i.name == "front" then drawFront();
+			else if i.name == "back" then drawBack();
+			else if i.name == "left" then drawLeft();
+			else if i.name == "right" then drawRight();
+			else if i.name == "bottom" then drawBottom();
+			else if i.name == "top" then drawTop();
+			else error("could not draw Cube");
+		}	
+	}
+}
+
+class Rubik
+{
+public:
+	#bottom
+	var cube00 ;
+	var cube01 ;
+	var cube02 ;
+	var cube03 ;
+	var cube04 ;
+	var cube05 ;
+	var cube06 ;
+	var cube07 ;
+	var cube08 ;
+	#middle
+	var cube09 ;
+	var cube10 ;
+	var cube11 ;
+	var cube12 ;
+	var cube13 ;
+	var cube14 ;
+	var cube15 ;
+	var cube16 ;
+	var cube17 ;
+	#top
+	var cube18 ;
+	var cube19 ;
+	var cube20 ;
+	var cube21 ;
+	var cube22 ;
+	var cube23 ;
+	var cube24 ;
+	var cube25 ;
+	var cube26 ;
+	
+	var cubes = [];
+	var position = [];	
+		
+	constructor()
+	{
+	#bottom
+	cube00 = cube(cubeLength,[1,-1,-1],[yellow,red,[0,0,0],[0,0,0],green,[0,0,0]]);
+	cube01 = cube(cubeLength,[1,0,-1],[yellow,red,[0,0,0],[0,0,0],[0,0,0],[0,0,0]]);
+	cube02 = cube(cubeLength,[1,1,-1],[yellow,red,blue,[0,0,0],[0,0,0],[0,0,0]]);
+	cube03 = cube(cubeLength,[0,-1,-1],[yellow,[0,0,0],[0,0,0],[0,0,0],green,[0,0,0]]);
+	cube04 = cube(cubeLength,[0,0,-1],[yellow,[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]]);
+	cube05 = cube(cubeLength,[0,1,-1],[yellow,[0,0,0],blue,[0,0,0],[0,0,0],[0,0,0]]);
+	cube06 = cube(cubeLength,[-1,-1,-1],[yellow,[0,0,0],[0,0,0],orange,green,[0,0,0]]);
+	cube07 = cube(cubeLength,[-1,0,-1],[yellow,[0,0,0],[0,0,0],orange,[0,0,0],[0,0,0]]);
+	cube08 = cube(cubeLength,[-1,1,-1],[yellow,[0,0,0],blue,orange,[0,0,0],[0,0,0]]);
+	#middle
+	cube09 = cube(cubeLength,[1,-1,0],[[0,0,0],red,[0,0,0],[0,0,0],green,[0,0,0]]);
+	cube10 = cube(cubeLength,[1,0,0],[[0,0,0],red,[0,0,0],[0,0,0],[0,0,0],[0,0,0]]);
+	cube11 = cube(cubeLength,[1,1,0],[[0,0,0],red,blue,[0,0,0],[0,0,0],[0,0,0]]);
+	cube12 = cube(cubeLength,[0,-1,0],[[0,0,0],[0,0,0],[0,0,0],[0,0,0],green,[0,0,0]]);
+	cube13 = cube(cubeLength,[0,0,0],[[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]]);
+	cube14 = cube(cubeLength,[0,1,0],[[0,0,0],[0,0,0],blue,[0,0,0],[0,0,0],[0,0,0]]);
+	cube15 = cube(cubeLength,[-1,-1,0],[[0,0,0],[0,0,0],[0,0,0],orange,green,[0,0,0]]);
+	cube16 = cube(cubeLength,[-1,0,0],[[0,0,0],[0,0,0],[0,0,0],orange,[0,0,0],[0,0,0]]);
+	cube17 = cube(cubeLength,[-1,1,0],[[0,0,0],[0,0,0],blue,orange,[0,0,0],[0,0,0]]);
+	#top
+	cube18 = cube(cubeLength,[1,-1,1],[[0,0,0],red,[0,0,0],[0,0,0],green,white]);
+	cube19 = cube(cubeLength,[1,0,1],[[0,0,0],red,[0,0,0],[0,0,0],[0,0,0],white]);
+	cube20 = cube(cubeLength,[1,1,1],[[0,0,0],red,blue,[0,0,0],[0,0,0],white]);
+	cube21 = cube(cubeLength,[0,-1,1],[[0,0,0],[0,0,0],[0,0,0],[0,0,0],green,white]);
+	cube22 = cube(cubeLength,[0,0,1],[[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],white]);
+	cube23 = cube(cubeLength,[0,1,1],[[0,0,0],[0,0,0],blue,[0,0,0],[0,0,0],white]);
+	cube24 = cube(cubeLength,[-1,-1,1],[[0,0,0],[0,0,0],[0,0,0],orange,green,white]);
+	cube25 = cube(cubeLength,[-1,0,1],[[0,0,0],[0,0,0],[0,0,0],orange,[0,0,0],white]);
+	cube26 = cube(cubeLength,[-1,1,1],[[0,0,0],[0,0,0],blue,orange,[0,0,0],white]);
+	
+	cubes = [cube00, cube01, cube02, cube03, cube04, cube05, cube06, cube07, cube08,
+			cube09, cube10, cube11, cube12, cube13, cube14, cube15, cube16, cube17,
+			cube18, cube19, cube20, cube21, cube22, cube23, cube24, cube25, cube26];
+	
+	position = [cube00, cube01, cube02, cube03, cube04, cube05, cube06, cube07, cube08,
+			cube09, cube10, cube11, cube12, cube13, cube14, cube15, cube16, cube17,
+			cube18, cube19, cube20, cube21, cube22, cube23, cube24, cube25, cube26];
+	}	
+	#orders cubes relative to the distance to a given point
+	function orderCubes(p_vanishingPoint)
+	{
+		for var i in 0:(cubes.size()-1) do
+		{
+			if cubes[i].getDistance(p_vanishingPoint) >= cubes[i+1].getDistance(p_vanishingPoint) then continue;
+			else
+			{
+				cubes.insert(i, cubes[i+1]);
+				cubes.remove(i+2);
+				orderCubes(p_vanishingPoint);
+			}
+		}
+	}
+	function drawAll()
+	{
+		this.orderCubes(vanishingPoint);
+		canvas.setFillColor(1,1,1);
+		canvas.clear();
+		canvas.shift(canvas.width()/2, canvas.height()/2);
+		for var i in 0:27 do
+		{
+			cubes[i].draw();
+		}
+	}	
+}
+class Move
+{
+	public:
+		var type;
+		var degree;
+		constructor(p_type, p_degree)
+		{
+			type = p_type;
+			degree = p_degree;
+		}
+}
+#------------------------
+var rubiks = Rubik();
+var movements = [];
+#------------------------
+function onTick(event)
+{	
+	#return to standart position 	
+	for var j in (-1*movements.size()):0 do
+	{
+		if movements[(-1*j)-1].type == 1 then
+		{
+			for var i in rubiks.cubes do
+			{
+				i.rotateX1(-1*movements[(-1*j)-1].degree);		
+			}
+		}
+		if movements[(-1*j)-1].type == 2 then
+		{
+			for var i in rubiks.cubes do
+			{
+				i.rotateX2(-1*movements[(-1*j)-1].degree);		
+			}
+		}
+		if movements[(-1*j)-1].type == 3 then
+		{
+			for var i in rubiks.cubes do
+			{
+				i.rotateX3(-1*movements[(-1*j)-1].degree);		
+			}
+		}
+	}			
+	#rotate as wished
+	rubiks.cube00.rotateX3(math.pi()/50);
+	rubiks.cube01.rotateX3(math.pi()/50);
+	rubiks.cube02.rotateX3(math.pi()/50);
+	rubiks.cube03.rotateX3(math.pi()/50);
+	rubiks.cube04.rotateX3(math.pi()/50);
+	rubiks.cube05.rotateX3(math.pi()/50);
+	rubiks.cube06.rotateX3(math.pi()/50);
+	rubiks.cube07.rotateX3(math.pi()/50);
+	rubiks.cube08.rotateX3(math.pi()/50);	
+	
+	for var j in 0:movements.size() do
+	{
+		if movements[j].type == 1 then
+		{
+			for var i in rubiks.cubes do
+			{
+				i.rotateX1(movements[j].degree);		
+			}
+		}
+		if movements[j].type == 2 then
+		{
+			for var i in rubiks.cubes do
+			{
+				i.rotateX2(movements[j].degree);		
+			}
+		}
+		if movements[j].type == 3 then
+		{
+			for var i in rubiks.cubes do
+			{
+				i.rotateX3(movements[j].degree);		
+			}
+		}
+	}
+	wait(100);
+	rubiks.drawAll();
+}
+
+function onKey(event)
+{
+	if event.key == "w" then
+	{
+		var degree = math.pi()/-30;
+		for var i in rubiks.cubes do
+		{
+			i.rotateX2(degree);
+		
+		}
+		movements.push(Move(2,degree));
+		rubiks.drawAll();
+	}
+	else if event.key == "s" then
+	{
+		var degree = math.pi()/30;
+		for var i in rubiks.cubes do
+		{
+			
+			i.rotateX2(degree);		
+			
+		}
+		movements.push(Move(2,degree));
+		rubiks.drawAll();
+	}
+	else if event.key == "a" then
+	{
+		var degree = math.pi()/-30;
+		for var i in rubiks.cubes do
+		{
+			
+			i.rotateX3(degree);		
+			
+			
+		}
+		movements.push(Move(3,degree));
+		rubiks.drawAll();
+	}
+	else if event.key == "d" then
+	{
+		var degree = math.pi()/+30;
+		for var i in rubiks.cubes do
+		{
+			
+			i.rotateX3(degree);	
+			
+		}
+		movements.push(Move(3,degree));
+		rubiks.drawAll();
+	}
+}
+#----------------------Code-----------------------
+setEventHandler("canvas.keydown", onKey);
+setEventHandler("timer", onTick);
+
+rubiks.drawAll();
+enterEventMode();
+
